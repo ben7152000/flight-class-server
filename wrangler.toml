@@ -1,0 +1,13 @@
+name = "flight-class-server"
+main = "index.js"
+compatibility_date = "2024-01-01"
+
+# D1 資料庫綁定
+[[d1_databases]]
+binding = "DB"
+database_name = "user"
+database_id = "e7fa0b11-29cd-4c28-9ac1-31da0f893373"
+
+# Cron Triggers - 每10天執行一次清理
+[triggers]
+crons = ["0 0 */10 * *"]

@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "wrangler dev",
+    "deploy": "export CLOUDFLARE_API_TOKEN=mHDMS6J-7Xcl727fGLrFhGpnWVqZW9REShwc2k_f && wrangler deploy",
+    "test:local": "nodemon examples.js"
   },
   "keywords": [],
   "author": "",
@@ -11,6 +13,10 @@
   "description": "",
   "dependencies": {
     "dotenv": "^17.2.3",
-    "node-fetch": "^2.7.0"
+    "node-fetch": "^2.7.0",
+    "nodemon": "^3.1.10"
+  },
+  "devDependencies": {
+    "wrangler": "^4.42.0"
   }
 }
