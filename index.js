@@ -46,7 +46,7 @@ function handleWebSocket(request, env) {
       const data = JSON.parse(event.data);
 
       if (data.type === 'ping') {
-        server.send(JSON.stringify({ type: 'pong', timestamp: Date.now() }));
+        server.send(JSON.stringify({ type: 'ping', timestamp: Date.now() }));
       } else if (data.type === 'enter') {
         const result = await validateAndEnter(data.token, env);
         server.send(JSON.stringify(result));
