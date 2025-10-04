@@ -1,5 +1,3 @@
-import crypto from 'crypto';
-
 export default {
   async scheduled(event, env, ctx) {
     await cleanupUnusedUsers(env);
@@ -50,7 +48,7 @@ function handleWebSocket(request, env) {
       if (data.type === 'ping') {
         server.send(JSON.stringify({ type: 'ping', timestamp: Date.now() }));
       } else if (data.type === 'enter') {
-        const decryptedToken = decrypt(data.token, env);
+        const decryptedToken = await decrypt(data.token, env);
         const result = await validateAndEnter(decryptedToken, env);
         server.send(JSON.stringify(result));
 
@@ -189,19 +187,29 @@ async function createUser(request, env) {
   }
 }
 
-function decrypt(encryptedToken, env) {
+async function decrypt(encryptedToken, env) {
   try {
-    const algorithm = 'aes-256-cbc';
-    const key = crypto.scryptSync(env.ENCRYPTION_KEY, 'salt', 32);
-    const buffer = Buffer.from(encryptedToken, 'base64');
-    const iv = buffer.slice(0, 16);
-    const encryptedText = buffer.slice(16);
+    const encryptedBuffer = Uint8Array.from(atob(encryptedToken), c => c.charCodeAt(0));
 
-    const decipher = crypto.createDecipheriv(algorithm, key, iv);
-    let decrypted = decipher.update(encryptedText);
-    decrypted = Buffer.concat([decrypted, decipher.final()]);
+    const keyMaterial = new TextEncoder().encode(env.ENCRYPTION_KEY);
+    const key = await crypto.subtle.importKey(
+      'raw',
+      keyMaterial.slice(0, 32),
+      { name: 'AES-GCM' },
+      false,
+      ['decrypt']
+    );
 
-    return decrypted.toString();
+    const iv = encryptedBuffer.slice(0, 12);
+    const ciphertext = encryptedBuffer.slice(12);
+
+    const decryptedBuffer = await crypto.subtle.decrypt(
+      { name: 'AES-GCM', iv },
+      key,
+      ciphertext
+    );
+
+    return new TextDecoder().decode(decryptedBuffer);
   } catch (error) {
     throw new Error('Decryption failed: ' + error.message);
   }
