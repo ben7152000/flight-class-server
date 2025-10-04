@@ -1,3 +1,5 @@
+import crypto from 'crypto';
+
 export default {
   async scheduled(event, env, ctx) {
     await cleanupUnusedUsers(env);
@@ -48,11 +50,12 @@ function handleWebSocket(request, env) {
       if (data.type === 'ping') {
         server.send(JSON.stringify({ type: 'ping', timestamp: Date.now() }));
       } else if (data.type === 'enter') {
-        const result = await validateAndEnter(data.token, env);
+        const decryptedToken = decrypt(data.token, env);
+        const result = await validateAndEnter(decryptedToken, env);
         server.send(JSON.stringify(result));
 
         if (result.type === 'success') {
-          userToken = data.token;
+          userToken = decryptedToken;
           const timeUntilExpire = result.expired_time - Date.now();
 
           if (expireTimer) clearTimeout(expireTimer);
@@ -183,6 +186,24 @@ async function createUser(request, env) {
     return jsonResponse({ success: true, token, created_time });
   } catch (error) {
     return jsonResponse({ error: error.message }, 500);
+  }
+}
+
+function decrypt(encryptedToken, env) {
+  try {
+    const algorithm = 'aes-256-cbc';
+    const key = crypto.scryptSync(env.ENCRYPTION_KEY, 'salt', 32);
+    const buffer = Buffer.from(encryptedToken, 'base64');
+    const iv = buffer.slice(0, 16);
+    const encryptedText = buffer.slice(16);
+
+    const decipher = crypto.createDecipheriv(algorithm, key, iv);
+    let decrypted = decipher.update(encryptedText);
+    decrypted = Buffer.concat([decrypted, decipher.final()]);
+
+    return decrypted.toString();
+  } catch (error) {
+    throw new Error('Decryption failed: ' + error.message);
   }
 }
 
