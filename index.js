@@ -174,7 +174,7 @@ async function validateAndEnter(token, env) {
 async function createUser(request, env) {
   try {
     const { token } = await request.json();
-    const created_time = Date.now().toString();
+    const created_time = Date.now();
 
     await env.DB.prepare(
       'INSERT INTO user (token, created_time) VALUES (?, ?)'
